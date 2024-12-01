@@ -1,0 +1,150 @@
+<?php
+
+$servername = "localhost";
+$username = "root"; 
+$password = "";
+$dbname = "";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+} else {
+    echo "Connected successfully.<br>";
+}
+
+$room_filter = isset($_POST['room_name']) ? $_POST['room_name'] : '';
+$day_filter = isset($_POST['day']) ? $_POST['day'] : '';
+
+
+$sql = "SELECT * FROM schedule";
+$result = $conn->query($sql);
+
+echo "Number of rows returned: " . $result->num_rows . "<br>";
+
+$schedules = [];
+
+// Organize schedules by room and day
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $schedules[$row['room_name']][$row['day']][$row['time']] = [
+            'subject' => $row['subject'] ?? 'Open',
+            'section' => $row['section'] ?? 'N/A',
+            'teacher' => $row['teacher'] ?? 'N/A',
+        ];
+    }
+} else {
+    echo "No rows returned.";
+}
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Schedule</title>
+    <style>
+        h1{
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Filter Schedules</h2>
+
+<form action="" method="post">
+    <label for="room_name">Room Name:</label>
+    <select name="room_name" id="room_name">
+        <option value="">All Rooms</option>
+        <option value="LR1" <?php if ($room_filter == 'LR1') echo 'selected'; ?>>LR1</option>
+        <option value="LR2" <?php if ($room_filter == 'LR2') echo 'selected'; ?>>LR2</option>
+        <option value="LR3" <?php if ($room_filter == 'LR3') echo 'selected'; ?>>LR3</option>
+        <option value="LAB1" <?php if ($room_filter == 'LAB1') echo 'selected'; ?>>LAB1</option>
+        <option value="LAB2" <?php if ($room_filter == 'LAB2') echo 'selected'; ?>>LAB2</option>
+    </select>
+
+    <label for="day">Day:</label>
+    <select name="day" id="day">
+        <option value="">All Days</option>
+        <option value="Monday" <?php if ($day_filter == 'Monday') echo 'selected'; ?>>Monday</option>
+        <option value="Tuesday" <?php if ($day_filter == 'Tuesday') echo 'selected'; ?>>Tuesday</option>
+        <option value="Wednesday" <?php if ($day_filter == 'Wednesday') echo 'selected'; ?>>Wednesday</option>
+        <option value="Thursday" <?php if ($day_filter == 'Thursday') echo 'selected'; ?>>Thursday</option>
+        <option value="Friday" <?php if ($day_filter == 'Friday') echo 'selected'; ?>>Friday</option>
+        <option value="Saturday" <?php if ($day_filter == 'Saturday') echo 'selected'; ?>>Saturday</option>
+        <option value="Sunday" <?php if ($day_filter == 'Sunday') echo 'selected'; ?>>Sunday</option>
+    </select>
+
+    <input type="submit" value="Filter">
+</form>
+
+<h1>ROOM NAME</h1>
+
+<table>
+    <thead>
+        <tr><th>Time</th>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+            <th>Saturday</th>
+            <th>Sunday</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        // Define time slots
+        $time_slots = [
+            '08:00 - 09:00',
+            '09:00 - 10:00',
+            '10:00 - 11:00',
+            '11:00 - 12:00',
+            '12:00 - 01:00',
+            '01:00 - 02:00',
+            '02:00 - 03:00',
+            '03:00 - 04:00',
+            '04:00 - 05:00',
+        ];
+
+        // Loop through time slots and display the schedule
+        foreach ($time_slots as $time) {
+            echo "<tr>
+                    <td>{$time}</td>";
+            foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day) {
+                $subject = 'Open';
+                $section = 'N/A';
+                $teacher = 'N/A';
+                if (isset($schedules[$room_filter][$day][$time])) {
+                    $subject = $schedules[$room_filter][$day][$time]['subject'];
+                    $section = $schedules[$room_filter][$day][$time]['section'];
+                    $teacher = $schedules[$room_filter][$day][$time]['teacher'];
+                }
+                echo "<td>{$subject}<br>{$section}<br>{$teacher}</td>";
+            }
+            echo "</tr>";
+        }
+        ?>
+    </tbody>
+</table>
+
+</body>
+</html>
